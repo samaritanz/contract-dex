@@ -1,0 +1,18 @@
+{
+  "dev": {
+    "mnemonic": "ready bracket twenty invite garlic aunt depth twice remember mouse tool sport artwork fade push fuel heart wagon together gown helmet thing anxiety faint",
+    "privateKey": "a9ca62e979536303c8d68905ad4e6834bbd4fdb00758d9c8dfc6b4c0dffc7682",
+    "5": {
+
+      "airdrop": "0x48916fb36771ac742Db2E4d3cd61a2373e27928c",
+      "rpcurl": "https://rpc.ankr.com/eth_goerli"
+    },
+    "97": {
+      "airdrop": "0x3f58a8A51FC861D01eFa7066eB0a2a425209a22F",
+      "token": "0x487082E1E16fE757BB4c6e20c15A2A8832F68168",
+      "Router_Address": "0x9Ac64Cc6e4415144C455BD8E4837Fea55603e5c3",
+      "USDT": "0xA2aB9f3c857A8a4989Fac70BE78cddB75990Bc66",
+      "rpcurl": "https://rpc.ankr.com/bsc_testnet_chapel"
+    }
+  }
+}
