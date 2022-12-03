@@ -12,7 +12,8 @@
       "token": "0x487082E1E16fE757BB4c6e20c15A2A8832F68168",
       "Router_Address": "0x9Ac64Cc6e4415144C455BD8E4837Fea55603e5c3",
       "USDT": "0xA2aB9f3c857A8a4989Fac70BE78cddB75990Bc66",
-      "rpcurl": "https://rpc.ankr.com/bsc_testnet_chapel"
+      "rpcurl": "https://rpc.ankr.com/bsc_testnet_chapel",
+      "rpcurl1": "https://data-seed-prebsc-1-s3.binance.org:8545"
     }
   }
 }

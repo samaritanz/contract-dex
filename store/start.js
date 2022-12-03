@@ -8,11 +8,12 @@ var {
 } = require("../utils");
 var { tokenABI, routerABI } = require("../utils/abi");
 var dayjs = require("dayjs");
+var { logger } = require("../logger");
 
 const multiTransferETH = async () => {
-  // console.log("start", config.get("dev"));
+  // logger.info("start", config.get("dev"));
   // const mnemonic = utils.entropyToMnemonic(utils.randomBytes(32));
-  // console.log({ mnemonic });
+  // logger.info({ mnemonic });
   try {
     const provider = new ethers.providers.JsonRpcProvider(
       config.get("dev")["97"].rpcurl
@@ -21,8 +22,8 @@ const multiTransferETH = async () => {
 
     const walletBalance = await provider.getBalance(wallet.address);
     // const walletBalance = await provider.getBalance(wallet.address);
-    console.log(
-      `\n当前地址：${wallet.address}的余额是 ${utils.formatEther(
+    logger.info(
+      `当前地址：${wallet.address}的余额是 ${utils.formatEther(
         walletBalance
       )} ETH`
     );
@@ -55,8 +56,8 @@ const multiTransferETH = async () => {
     await tx.wait();
     const afterwalletBalance = await provider.getBalance(wallet.address);
     // const walletBalance = await provider.getBalance(wallet.address);
-    console.log(
-      `\nTransfer之后当前地址：${wallet.address}的余额是 ${utils.formatEther(
+    logger.info(
+      `Transfer之后当前地址：${wallet.address}的余额是 ${utils.formatEther(
         afterwalletBalance
       )} ETH`
     );
@@ -64,22 +65,22 @@ const multiTransferETH = async () => {
       let hdNodeNew = hdNode.derivePath(basePath + "/" + i);
       let walletNew = new ethers.Wallet(hdNodeNew.privateKey);
       const balance = await provider.getBalance(walletNew.address);
-      console.log(
-        `\n地址：${walletNew.address} 余额：${utils.formatEther(balance)}`
+      logger.info(
+        `地址：${walletNew.address} 余额：${utils.formatEther(balance)}`
       );
     }
-    // console.log({ addresses, amounts }, utils.parseEther("0.002"));
+    // logger.info({ addresses, amounts }, utils.parseEther("0.002"));
     // return { addresses, amounts };
     // return;
   } catch (error) {
-    console.log({ error });
+    logger.info({ error });
   }
 };
 
 const multiTransferToken = async (tokenAddress) => {
-  // console.log("start", config.get("dev"));
+  // logger.info("start", config.get("dev"));
   // const mnemonic = utils.entropyToMnemonic(utils.randomBytes(32));
-  // console.log({ mnemonic });
+  // logger.info({ mnemonic });
   try {
     const provider = getProvider();
     const wallet = getMainWallet(provider);
@@ -111,8 +112,8 @@ const multiTransferToken = async (tokenAddress) => {
     const amounts = Array(20).fill(utils.parseEther("100000"));
 
     let tokenBalance = await tokenContract.balanceOf(wallet.address);
-    console.log(
-      `\n当前地址：${wallet.address}的token余额为：${utils.formatUnits(
+    logger.info(
+      `当前地址：${wallet.address}的token余额为：${utils.formatUnits(
         tokenBalance,
         "18"
       )}`
@@ -125,16 +126,16 @@ const multiTransferToken = async (tokenAddress) => {
     // // 等待交易上链
     await tx.wait();
     tokenBalance = await tokenContract.balanceOf(wallet.address);
-    console.log(
-      `\n当前地址：${wallet.address}的token余额为：${utils.formatUnits(
+    logger.info(
+      `当前地址：${wallet.address}的token余额为：${utils.formatUnits(
         tokenBalance,
         "18"
       )}`
     );
     // const afterwalletBalance = await provider.getBalance(wallet.address);
     // // const walletBalance = await provider.getBalance(wallet.address);
-    // console.log(
-    //   `\nTransfer之后当前地址：${wallet.address}的余额是 ${utils.formatEther(
+    // logger.info(
+    //   `Transfer之后当前地址：${wallet.address}的余额是 ${utils.formatEther(
     //     afterwalletBalance
     //   )} ETH`
     // );
@@ -144,107 +145,108 @@ const multiTransferToken = async (tokenAddress) => {
     });
     balanceArray = await Promise.all(balanceArray);
     balanceArray.map((balanceData, index) =>
-      console.log(
-        `\n地址：${addresses[index]} 余额：${utils.formatEther(balanceData)}`
+      logger.info(
+        `地址：${addresses[index]} 余额：${utils.formatEther(balanceData)}`
       )
     );
   } catch (error) {
-    console.log({ error });
+    logger.info({ error });
   }
 };
 
-const exchangeToken = async (tokenFrom, tokenTo) => {
-  // console.log({ tokenFrom: tokenFrom, tokenTo: tokenTo });
+const exchangeToken = async ({ from, to, amount, slippage = 10 }) => {
+  // logger.info({ from: from, to: to });
   const provider = getProvider();
   // const wallet = getMainWallet(provider);
   const { walletArray } = getAddresses();
-  // console.log({ tokenABI });
+  // logger.info({ tokenABI });
   const startApproveTime = dayjs().unix();
-  console.log(`开始授权 ${startApproveTime} \n`);
+  logger.info(`开始购买`);
   await Promise.all(
-    walletArray.map(async (item) => {
+    walletArray.map(async (item, index) => {
       const tokenContract = new ethers.Contract(
         config.get("dev")["97"].token,
         tokenABI,
         item
       );
+      const toContract = new ethers.Contract(
+        config.get("dev")["97"].USDT,
+        tokenABI,
+        provider
+      );
       const allowance = await tokenContract.allowance(
         item.address,
         config.get("dev")["97"].Router_Address
       );
-      if (utils.formatUnits(allowance) < 1000) {
-        // console.log({ tokenContract });
+      logger.info(
+        `地址${item.address}对应的授权额度为:${utils.formatUnits(allowance)}`
+      );
+      if (utils.formatUnits(allowance) < amount) {
+        // logger.info({ tokenContract });
+        logger.info(`地址${item.address}开始授权`);
         const tx = await tokenContract.approve(
           config.get("dev")["97"].Router_Address,
           utils.parseUnits("1000000000").toString()
         );
-        // console.log({ tx });
+        // logger.info({ tx });
         await tx.wait();
         const allowance = await tokenContract.allowance(
           item.address,
           config.get("dev")["97"].Router_Address
         );
-        console.log(
-          `\n 地址:${item.address} 对Router合约的授权额度：${utils.formatUnits(
+        logger.info(
+          ` 地址:${item.address} 对Router合约的授权额度：${utils.formatUnits(
             String(allowance)
           )}`
         );
       }
+      const routerContract = new ethers.Contract(
+        config.get("dev")["97"].Router_Address,
+        routerABI,
+        item
+      );
+      const deadline = 5;
+      logger.info(`开始查询最少购买的数量`);
+      const amounts = await routerContract.getAmountsOut(
+        utils.parseUnits(amount),
+        [from, to]
+      );
+
+      const amountOut = Number(
+        Number(utils.formatUnits(amounts[1])) * (1 - slippage / 100)
+      ).toFixed(8);
+      // logger.info(`最少获得的Token数量为:${amountOut}`);
+      // logger.info({ tokenContract });
+      const beforeSwapBalance = await toContract.balanceOf(item.address);
+      logger.info(
+        `地址${item.address}购买前余额${utils.formatUnits(beforeSwapBalance)}`
+      );
+
+      const swapTx = await routerContract.swapExactTokensForTokens(
+        utils.parseUnits(amount),
+        utils.parseUnits(String(amountOut)),
+        [from, to],
+        item.address,
+        Date.now() + 1000 * 60 * deadline
+      );
+      await swapTx.wait();
+
+      const [balance, blockNumber] = await Promise.all([
+        toContract.balanceOf(item.address),
+        provider.getBlockNumber(),
+      ]);
+      // const blockNumber = await provider.getBlockNumber();
+      logger.info(`地址${item.address}购买后余额${utils.formatUnits(balance)}`);
+      logger.info(
+        `地址:${item.address} 购买成功 ,购买金额为：${
+          utils.formatUnits(balance) - utils.formatUnits(beforeSwapBalance)
+        }`
+      );
+      logger.info(`当前区块为：${blockNumber}`);
     })
   );
   const endApprovetime = dayjs().unix();
-  console.log(`授权结束，用时${endApprovetime - startApproveTime}秒`);
-
-  console.log("开始购买。。。");
-  const toContract = new ethers.Contract(
-    config.get("dev")["97"].USDT,
-    tokenABI,
-    provider
-  );
-  try {
-    await Promise.all(
-      walletArray.map(async (item) => {
-        // const tokenContract = new ethers.Contract(
-        //   config.get("dev")["97"].token,
-        //   tokenABI,
-        //   item
-        // );
-        // console.log({ item });
-
-        const routerContract = new ethers.Contract(
-          config.get("dev")["97"].Router_Address,
-          routerABI,
-          item
-        );
-        const deadline = 5;
-
-        // console.log({ tokenContract });
-        const tx = await routerContract.swapExactTokensForTokens(
-          utils.parseUnits("1000"),
-          utils.parseUnits("10"),
-          [tokenFrom, tokenTo],
-          item.address,
-          Date.now() + 1000 * 60 * deadline
-        );
-        await tx.wait();
-        const [balance, blockNumber] = await Promise.all([
-          toContract.balanceOf(item.address),
-          provider.getBlockNumber(),
-        ]);
-        // const blockNumber = await provider.getBlockNumber();
-        console.log(
-          `地址:${item.address} 购买成功 ,当前余额为：${utils.formatUnits(
-            String(balance)
-          )}`
-        );
-        console.log(`当前区块为：${blockNumber}`);
-      })
-    );
-  } catch (error) {
-    console.log(error);
-  }
-  const endSwaptime = dayjs().unix();
-  console.log(`购买结束，用时${endSwaptime - endApprovetime}秒`);
+  logger.info(`购买结束，用时${endApprovetime - startApproveTime}秒`);
 };
 
 module.exports = {

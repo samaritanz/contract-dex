@@ -6,9 +6,19 @@ var {
   exchangeToken,
 } = require("../store/start");
 var { utils } = require("ethers");
+var { logger } = require("../logger");
+
 /* GET home page. */
 router.get("/", function (req, res, next) {
+  logger.info("home page");
+
   res.render("index", { title: "Express" });
+});
+
+router.get("/index", function (req, res, next) {
+  logger.info("home page");
+
+  res.json({ title: "Express" });
 });
 
 router.get("/transfer/ETH", async (req, res, next) => {
@@ -49,10 +59,10 @@ router.get("/transfertoken", async (req, res, next) => {
 
 router.get("/exchange", async (req, res, next) => {
   // console.log({ req });
-  const tokenFrom = req.query.from;
-  const tokenTo = req.query.to;
-  if (utils.isAddress(tokenFrom) && utils.isAddress(tokenTo)) {
-    const data = await exchangeToken(tokenFrom, tokenTo);
+  const { from, to, amount, slippage } = req.query;
+  // const tokenTo = req.query.to;
+  if (utils.isAddress(from) && utils.isAddress(to)) {
+    const data = await exchangeToken({ from, to, amount, slippage });
 
     res.json({
       title: "Express",
